@@ -10,7 +10,8 @@ import org.springframework.http.ResponseEntity;
 
 import org.json.JSONObject;
 import org.json.JSONException;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -22,8 +23,8 @@ import static java.nio.file.StandardOpenOption.CREATE;
 
 @RestController
 public class WebhookListener {
-
-    private static final String directoryPath = "D:\\Projetos\\Hildermes\\spring-webhook";
+	private static final Logger logger = LoggerFactory.getLogger(WebhookListener.class);
+    private static final String directoryPath = "D:\\Projetos\\Hildermes\\spring-webhook"; //Change to your desired path
     private static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
     @GetMapping("/")
@@ -44,7 +45,7 @@ public class WebhookListener {
     @GetMapping("/webhook")
     public ResponseEntity<String> getWebhookHelp() {
         return ResponseEntity.ok("<h3>Webhook Listener!</h3>"
-                + "<h5>Your payloads must be poste at the body on this route<h5>");
+                + "<h5>Your payloads must be posted at the body on this route<h5>");
     }
     
 
@@ -53,7 +54,7 @@ public class WebhookListener {
         try {
             JSONObject jsonPayload = new JSONObject(payload);
             String formattedPayload = jsonPayload.toString(4) + System.lineSeparator();
-            System.out.println("Received Payload:: " + formattedPayload);
+            logger.info("Received Payload:: {}", formattedPayload);
 
             String timestamp = LocalDateTime.now().format(dtf);
             UUID fileUUID = UUID.randomUUID();
@@ -62,12 +63,12 @@ public class WebhookListener {
             Path path = Paths.get(fileName);
             byte[] strToBytes = formattedPayload.getBytes();
             Files.write(path, strToBytes, CREATE, APPEND);
-            return ResponseEntity.status(HttpStatus.CREATED).body("{\"success\":\"true\"}");
+            return ResponseEntity.ok().body("{\"success\":\"true\"}");
         } catch (JSONException e) {
-            System.out.println("JSON parsing error: " + e.getMessage());
+        	logger.error("JSON parsing error: ", e);
             return ResponseEntity.badRequest().body("{\"error\":\"Invalid JSON format\"}");
         } catch (Exception e) {
-            System.out.println("General error: " + e.getMessage());
+        	logger.error("General error: ", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"error\":\"Internal Server Error\"}");
         }
     }
